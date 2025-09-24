@@ -1,0 +1,15 @@
+SUMMARY:
+	ROM0: 57 bytes used / 16327 free
+
+ROM0 bank #0:
+	SECTION: $0000-$0003 ($0004 bytes) ["ROM Bank $00"]
+	         $0000 = EntryPoint
+	EMPTY: $0004-$00ff ($00fc bytes)
+	SECTION: $0100-$0119 ($001a bytes) ["ROM Header"]
+	EMPTY: $011a-$014f ($0036 bytes)
+	SECTION: $0150-$016a ($001b bytes) ["Main"]
+	         $0150 = Start
+	         $015d = ClearLoop
+	         $0168 = MainLoop
+	EMPTY: $016b-$3fff ($3e95 bytes)
+	TOTAL EMPTY: $3fc7 bytes
