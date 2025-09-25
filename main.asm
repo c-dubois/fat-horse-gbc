@@ -1,6 +1,6 @@
 ; ================================
-; FAT HORSE PROJECT - LESSON 1
-; Minimal Game Boy Color ROM
+; FAT HORSE PROJECT
+; Game Boy Color homebrew with sprite-based horse
 ; ================================
 
 SECTION "ROM Bank $00", ROM0[$0000]
@@ -8,7 +8,7 @@ SECTION "ROM Bank $00", ROM0[$0000]
 ; Entry point - this is where the Game Boy starts executing code
 EntryPoint:
     di                      ; Disable interrupts during setup
-    jp Start                ; Jump to our main code
+    jp Start                ; Jump to main code
 
 ; ================================
 ; ROM HEADER - Required by hardware
@@ -20,7 +20,7 @@ SECTION "ROM Header", ROM0[$0100]
 ; or the Game Boy won't boot! RGBDS will fill this automatically.
     ; Nintendo Logo (required for booting)
     nop                    ; $0100
-    jp EntryPoint          ; $0101-$0103: Jump to our entry point
+    jp EntryPoint          ; $0101-$0103: Jump to entry point
 
 ; Game title (11 bytes, padded with zeros)
 db "FAT HORSE"       ; $0134-$013E: Title shown in emulators
@@ -29,7 +29,7 @@ db "FAT HORSE"       ; $0134-$013E: Title shown in emulators
 db $80                ; $0143: $80 = GBC compatible, $C0 = GBC only
 
 ; New licensee code (2 bytes)
-db "HM"                   ; $0144-$0145: Our "company code" (homebrew!)
+db "HM"                   ; $0144-$0145: "company code" (homebrew!)
 
 ; Super Game Boy flag  
 db $00                    ; $0146: $00 = not SGB enhanced
@@ -59,33 +59,23 @@ db $00                    ; $014D: will be fixed by linker
 dw $0000                  ; $014E-$014F: will be fixed by linker
 
 ; ================================
-; HORSE TILE DATA - From converted sprites
+; VARIABLES
 ; ================================
-
-SECTION "Horse Data", ROM0
-
-HorseDownTiles:
-    INCBIN "horse-down.2bpp"
-HorseDownTilesEnd:
-
-HorseLeftTiles:
-    INCBIN "horse-left.2bpp" 
-HorseLeftTilesEnd:
-
-HorseRightTiles:
-    INCBIN "horse-right.2bpp"
-HorseRightTilesEnd:
-
-HorseUpTiles:
-    INCBIN "horse-up.2bpp"
-HorseUpTilesEnd:
 
 SECTION "Variables", WRAM0
 CurrentDirection:
-    ds 1    ; 1 byte to store current direction (0=down, 1=left, 2=right, 3=up)
+    ds 1    ; 0=down, 1=left, 2=right, 3=up
+
+HorsePosX:
+    ds 1    ; The X coordinate of the horse
+HorsePosY:
+    ds 1    ; The Y coordinate of the horse
 
 PreviousJoypad:
-    ds 1    ; Store previous joypad state for input debouncing
+    ds 1    ; Input debouncing
+
+BaseTileNumber:
+    ds 1    ; Starting tile number for current horse
 
 ; ================================
 ; MAIN PROGRAM
@@ -94,212 +84,267 @@ PreviousJoypad:
 SECTION "Main", ROM0[$0150]
 
 Start:
-    ; Turn off the LCD (required before modifying video memory)
-    ld a, 0             ; Load 0 into register A
-    ld [$FF40], a       ; Store to LCD Control register (turns off screen)
+    ld sp, $FFFE
 
-    ; Clear ALL of VRAM to remove Nintendo logo
-    ld hl, $8000        ; Start of VRAM
-    ld bc, $2000        ; Clear 8KB (all VRAM: $8000-$9FFF)
-    ld a, 0             ; Fill with zeros
-    call FillMemory     ; Clear VRAM
-    
-    ; Clear OAM (sprite memory) to remove Nintendo logo sprites
-    ld hl, $FE00        ; Start of OAM (sprite memory)
-    ld bc, $00A0        ; Clear 160 bytes (40 sprites × 4 bytes each)
-    ld a, 0             ; Fill with zeros
-    call FillMemory     ; Clear all sprites
+    ; Turn off LCD
+    ld a, 0
+    ld [$FF40], a
 
-    ; Clear Nintendo logo tilemap area specifically
-    ld hl, $9900        ; Start of Nintendo logo tilemap area  
-    ld bc, $0060        ; Clear 96 bytes 
-    ld a, 0             ; Fill with zeros
-    call FillMemory     ; Clear Nintendo logo tilemap
+    ; Clear OAM 
+    ld hl, $FE00
+    ld b, 160
+    ld a, 0
+ClearOAM:
+    ld [hl+], a
+    dec b
+    jr nz, ClearOAM
 
-    ; Set up background palette (brown horse colors)
-    ld a, %11100100     ; Palette: 11=dark brown, 10=med brown, 01=light brown, 00=white
-    ld [$FF47], a       ; Store to Background Palette register
-
-    ; Initialize with horse facing down
-    ld a, 0                    ; Direction 0 = down
+    ; Initialize variables
+    ld a, 0                 
     ld [CurrentDirection], a
-    ld a, $FF                  ; Initialize previous joypad state
-    ld [PreviousJoypad], a
-    call LoadCurrentHorse
+    ld a, 80 ; Let's start X at 80
+    ld [HorsePosX], a
+    ld a, 72 ; Let's start Y at 72
+    ld [HorsePosY], a
 
-    ; Clear background tilemap
-    ld hl, $9800        ; Start of background tilemap
-    ld bc, $0400        ; Clear entire 32x32 tilemap  
-    ld a, 0             ; Fill with tile 0 (blank)
-    call FillMemory
+    ; Load ALL horse sprites into different VRAM areas
+    ld hl, HorseDownSprites
+    ld de, $8000
+    ld bc, HorseDownSpritesEnd - HorseDownSprites
+    call CopyMemory
+    
+    ld hl, HorseLeftSprites
+    ld de, $8480
+    ld bc, HorseLeftSpritesEnd - HorseLeftSprites
+    call CopyMemory
+    
+    ld hl, HorseRightSprites
+    ld de, $86C0
+    ld bc, HorseRightSpritesEnd - HorseRightSprites
+    call CopyMemory
+    
+    ld hl, HorseUpSprites
+    ld de, $8240
+    ld bc, HorseUpSpritesEnd - HorseUpSprites
+    call CopyMemory
 
-    ; Display the horse (6x6 tiles starting at screen position 5,5)
-    call DisplayHorse
+    ; Set initial base tile number
+    ld a, 0
+    ld [BaseTileNumber], a
 
-    ; Turn the LCD back on with background enabled
-    ld a, $91           ; $91 = LCD on, BG on, sprites off (for now)
-    ld [$FF40], a       ; Store to LCD Control register (turns on screen)
+    ; Set up sprite palette
+    ld a, %00011011
+    ld [$FF48], a
 
-    ; Main game loop with input checking
+    ; Set up the initial horse sprites
+    call SetupHorseSprites
+
+    ; Turn on LCD with sprites
+    ld a, %10000010
+    ld [$FF40], a
+
 MainLoop:
-    call CheckInput     ; Check for D-pad input
-    halt                ; Halt CPU until next interrupt (saves power)
-    jr MainLoop         ; Repeat forever
+    call WaitVBlank
+    call CheckInput
+    jr MainLoop
 
 ; ================================
-; HORSE MANAGEMENT FUNCTIONS
+; HORSE SPRITE FUNCTIONS
 ; ================================
 
-; Load current horse tiles into VRAM based on CurrentDirection
-LoadCurrentHorse:
+; Sets the base tile number based on the current direction.
+; This assumes all horse graphics are already loaded into VRAM.
+UpdateBaseTileNumber:
     ld a, [CurrentDirection]
-    
-    ; Jump to appropriate horse data based on direction
-    cp 0
-    jr z, LoadHorseDown
-    cp 1  
-    jr z, LoadHorseLeft
-    cp 2
-    jr z, LoadHorseRight
-    ; Otherwise load up (direction 3)
-    
-LoadHorseUp:
-    ld hl, HorseUpTiles
-    ld bc, HorseUpTilesEnd - HorseUpTiles
-    jr LoadHorseData
-    
-LoadHorseDown:
-    ld hl, HorseDownTiles
-    ld bc, HorseDownTilesEnd - HorseDownTiles
-    jr LoadHorseData
-    
-LoadHorseLeft:
-    ld hl, HorseLeftTiles
-    ld bc, HorseLeftTilesEnd - HorseLeftTiles
-    jr LoadHorseData
-    
-LoadHorseRight:
-    ld hl, HorseRightTiles  
-    ld bc, HorseRightTilesEnd - HorseRightTiles
-    
-LoadHorseData:
-    ld de, $8000        ; Load tiles starting at VRAM tile 0
-    call CopyMemory     ; Copy horse tiles to VRAM
+    cp 0 ; is direction Down?
+    jr z, .SetDown
+    cp 1 ; is direction Left?
+    jr z, .SetLeft
+    cp 2 ; is direction Right?
+    jr z, .SetRight
+    ; Otherwise, direction is Up
+
+.SetUp:
+    ld a, 36    ; Base tile number for Up horse (starts at $8240)
+    jr .Done
+.SetDown:
+    ld a, 0     ; Base tile number for Down horse (starts at $8000)
+    jr .Done
+.SetLeft:
+    ld a, 72    ; Base tile number for Left horse (starts at $8480)
+    jr .Done
+.SetRight:
+    ld a, 108   ; Base tile number for Right horse (starts at $86C0)
+.Done:
+    ld [BaseTileNumber], a
     ret
 
-; Display horse as 6x6 grid of tiles on screen
-DisplayHorse:
-    ld b, 6             ; 6 rows to draw
-    ld c, 0             ; Start with tile 0
-    ld hl, $9800 + 5*32 + 5  ; Screen position (5,5)
-    
-DisplayRow:
-    push bc             ; Save row counter
-    push hl             ; Save current tilemap position
-    ld b, 6             ; 6 tiles per row
-    
-DisplayTile:
-    ld a, c             ; Get current tile number
-    ld [hl+], a         ; Place tile in tilemap, advance to next position
-    inc c               ; Move to next tile number
-    dec b               ; Decrement tile counter
-    jr nz, DisplayTile  ; Continue if more tiles in this row
-    
-    pop hl              ; Restore tilemap position
-    pop bc              ; Restore row counter
-    ld de, 32           ; Move to next row (32 tiles per tilemap row)
-    add hl, de          ; Advance to next row
-    dec b               ; Decrement row counter
-    jr nz, DisplayRow   ; Continue if more rows to draw
+; Set up 6x6 grid of sprites to display the horse using nested loops
+SetupHorseSprites:
+    ld hl, $FE00                ; Start of OAM
+    ld a, [HorsePosY]
+    ld d, a                     ; Load initial Y coordinate
+    ld a, [BaseTileNumber]
+    ld c, a                     ; Load initial Tile Number
+    ld b, 6                     ; Initialize outer loop counter for 6 rows
+
+.row_loop:
+    ld a, [HorsePosX]
+    ld e, a                     ; Load and reset the initial X for the start of each row
+
+    ; save ONLY the row counter (b) using the AF register pair
+    ld a, b
+    push af
+
+    ld b, 6                     ; Initialize inner loop counter for 6 columns
+.col_loop:
+    ld a, d                     ; Current Y position
+    ld [hl+], a
+    ld a, e                     ; Current X position
+    ld [hl+], a
+    ld a, c                     ; Current Tile number
+    ld [hl+], a
+    inc c                       ; Next tile
+    ld a, 0                     ; Attributes (palette 0, no flip)
+    ld [hl+], a
+
+    ld a, e                     ; Move to next sprite position (X + 8)
+    add 8
+    ld e, a
+
+    dec b                       ; Decrement column counter
+    jr nz, .col_loop            ; Loop if not done with columns
+
+    ; restore ONLY the row counter
+    pop af
+    ld b, a
+
+    ld a, d                     ; Move to the next row (Y + 8)
+    add 8
+    ld d, a
+
+    dec b                       ; Decrement row counter
+    jr nz, .row_loop            ; Loop if not done with rows
     ret
 
 ; ================================
 ; INPUT HANDLING
 ; ================================
 
-; Check D-pad input and switch horses when direction changes
 CheckInput:
-    ; Read current joypad state
-    ld a, $20           ; Select D-pad buttons
-    ld [$FF00], a       ; Write to joypad register
-    ld a, [$FF00]       ; Read joypad state
-    ld a, [$FF00]       ; Read twice (hardware requirement)
-    ld a, [$FF00]       ; Read third time for stability
-    cpl                 ; Complement (pressed buttons now = 1)
-    and $0F             ; Mask to get only D-pad bits
-    
-    ; Check if input changed (debouncing)
-    ld b, a             ; Store current input
-    ld a, [PreviousJoypad]
-    cp b                ; Compare with previous input
-    jr z, CheckInputDone ; If same, skip processing
-    
-    ld a, b             ; Restore current input
-    ld [PreviousJoypad], a ; Save for next frame
-    
-    ; Check each direction (priority order: up, down, left, right)
-    bit 2, a            ; Up pressed? (bit 2)
-    jr nz, SwitchUp
-    bit 3, a            ; Down pressed? (bit 3)
-    jr nz, SwitchDown
-    bit 1, a            ; Left pressed? (bit 1)
-    jr nz, SwitchLeft
-    bit 0, a            ; Right pressed? (bit 0)
-    jr nz, SwitchRight
-    
-CheckInputDone:
-    ret
-    
-SwitchUp:
-    ld a, 3             ; Direction 3 = up
-    jr SwitchDirection
-SwitchDown:
-    ld a, 0             ; Direction 0 = down
-    jr SwitchDirection
-SwitchLeft:
-    ld a, 1             ; Direction 1 = left  
-    jr SwitchDirection
-SwitchRight:
-    ld a, 2             ; Direction 2 = right
-    
-SwitchDirection:
-    ; Check if direction actually changed
-    ld b, a             ; Store new direction
-    ld a, [CurrentDirection]
-    cp b                ; Compare with current direction
-    ret z               ; If same, don't update
-    
-    ld a, b             ; Restore new direction
-    ld [CurrentDirection], a ; Update current direction
-    call LoadCurrentHorse    ; Load new horse tiles
-    call DisplayHorse        ; Redraw horse on screen
+    ; Read joypad state for D-pad
+    ld a, $20
+    ld [$FF00], a
+    ld a, [$FF00]
+    ld a, [$FF00]
+    ld a, [$FF00]
+    cpl             ; Invert bits (pressed buttons are now 1)
+    and $0F         ; Isolate D-pad bits
+
+    ; Check one direction at a time
+    bit 0, a
+    jr nz, HandleRight
+    bit 1, a
+    jr nz, HandleLeft
+    bit 2, a
+    jr nz, HandleUp
+    bit 3, a
+    jr nz, HandleDown
+
+    ; No direction was pressed, so we're done
     ret
 
-; ================================  
+HandleRight:
+    ld a, 2 ; Set direction to Right
+    ld [CurrentDirection], a
+    ld hl, HorsePosX
+    inc [hl] ; Move right
+    ; Boundary check: Don't go off the right edge
+    ld a, [hl]
+    cp 160 - 48 + 8 ; Horse X must be < (Screen Width - Horse Width + Sprite Offset)
+    jr c, UpdateGraphics ; If less, update is okay
+    dec [hl] ; If not, move back
+    jr UpdateGraphics
+
+HandleLeft:
+    ld a, 1 ; Set direction to Left
+    ld [CurrentDirection], a
+    ld hl, HorsePosX
+    dec [hl] ; Move left
+    ; Boundary check: Don't go off the left edge
+    ld a, [hl]
+    cp 8 ; Sprite X coordinate starts at 8
+    jr nc, UpdateGraphics ; If >= 8, update is okay
+    inc [hl] ; If not, move back
+    jr UpdateGraphics
+
+HandleUp:
+    ld a, 3 ; Set direction to Up
+    ld [CurrentDirection], a
+    ld hl, HorsePosY
+    dec [hl] ; Move up
+    ; Boundary check: Don't go off the top edge
+    ld a, [hl]
+    cp 16 ; Sprite Y coordinate starts at 16
+    jr nc, UpdateGraphics ; If >= 16, update is okay
+    inc [hl] ; If not, move back
+    jr UpdateGraphics
+
+HandleDown:
+    ld a, 0 ; Set direction to Down
+    ld [CurrentDirection], a
+    ld hl, HorsePosY
+    inc [hl] ; Move down
+    ; Boundary check: Don't go off the bottom edge
+    ld a, [hl]
+    cp 144 - 48 + 16 ; Horse Y must be < (Screen Height - Horse Height + Sprite Offset)
+    jr c, UpdateGraphics ; If less, update is okay
+    dec [hl] ; If not, move back
+    ; Fall through to update graphics
+
+UpdateGraphics:
+    call UpdateBaseTileNumber
+    call SetupHorseSprites
+    ret
+
+; ================================
 ; UTILITY FUNCTIONS
 ; ================================
 
-; Copy BC bytes from HL to DE
 CopyMemory:
-    ld a, [hl+]         ; Load byte from [HL], increment HL
-    ld [de], a          ; Store byte to [DE]
-    inc de              ; Increment DE
-    dec bc              ; Decrement counter
-    ld a, b             ; Check if BC = 0
-    or c                
-    jr nz, CopyMemory   ; If not zero, continue
-    ret                 ; Return to caller
-
-; Fill BC bytes starting at HL with value in A
-FillMemory:
-    push af               ; Save the fill value on the stack
-FillLoop:
-    pop af
-    push af
-    ld [hl+], a         ; Store A to [HL], increment HL
-    dec bc              ; Decrement counter
-    ld a, b             ; Check if BC = 0
+    ld a, [hl+]
+    ld [de], a
+    inc de
+    dec bc
+    ld a, b
     or c
-    jr nz, FillLoop   ; If not zero, continue
-    pop af
-    ret                 ; Return to caller
+    jr nz, CopyMemory
+    ret
+
+WaitVBlank:
+    ld a, [$FF44]
+    cp 144
+    jr c, WaitVBlank
+    ret
+
+; ================================
+; HORSE SPRITE DATA
+; ================================
+
+SECTION "Horse Sprite Data", ROM0
+
+HorseDownSprites:
+    INCBIN "horse-down.2bpp"
+HorseDownSpritesEnd:
+
+HorseLeftSprites:
+    INCBIN "horse-left.2bpp"
+HorseLeftSpritesEnd:
+
+HorseRightSprites:
+    INCBIN "horse-right.2bpp"
+HorseRightSpritesEnd:
+
+HorseUpSprites:
+    INCBIN "horse-up.2bpp"
+HorseUpSpritesEnd:
