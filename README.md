@@ -17,8 +17,8 @@ A Game Boy Color homebrew project featuring a controllable fat horse with direct
 - **Directional Horse Sprite**: A fat horse with stubby legs that faces four different directions
 - **D-pad Movement**: Move the horse around the screen and change its facing direction
 - **Sound Effects**:
-  - Press A button for neigh/whinny sound
-  - Press B button for snort/blow sound
+  - Press A button for neigh/whinny sound (approximated using frequency sweep)
+  - Press B button for snort/blow sound (approximated using noise generator)
 - **Boundary Checking**: Horse stays within screen bounds
 - **Sprite-based Graphics**: Uses Game Boy Color's hardware sprite system for smooth movement
 
