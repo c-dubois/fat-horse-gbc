@@ -33,12 +33,12 @@ ROM0 bank #0:
 	         $02e0 = WaitVBlank
 	SECTION: $02e8-$0be7 ($0900 bytes) ["Horse Sprite Data"]
 	         $02e8 = HorseDownSprites
-	         $0528 = HorseDownSpritesEnd
 	         $0528 = HorseLeftSprites
-	         $0768 = HorseLeftSpritesEnd
+	         $0528 = HorseDownSpritesEnd
 	         $0768 = HorseRightSprites
-	         $09a8 = HorseRightSpritesEnd
+	         $0768 = HorseLeftSpritesEnd
 	         $09a8 = HorseUpSprites
+	         $09a8 = HorseRightSpritesEnd
 	         $0be8 = HorseUpSpritesEnd
 	EMPTY: $0be8-$3fff ($3418 bytes)
 	TOTAL EMPTY: $354a bytes

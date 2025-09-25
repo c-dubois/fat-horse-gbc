@@ -78,6 +78,28 @@ BaseTileNumber:
     ds 1    ; Starting tile number for current horse
 
 ; ================================
+; HORSE SPRITE DATA
+; ================================
+
+SECTION "Horse Sprite Data", ROM0
+
+HorseDownSprites:
+    INCBIN "horse-down.2bpp"
+HorseDownSpritesEnd:
+
+HorseLeftSprites:
+    INCBIN "horse-left.2bpp"
+HorseLeftSpritesEnd:
+
+HorseRightSprites:
+    INCBIN "horse-right.2bpp"
+HorseRightSpritesEnd:
+
+HorseUpSprites:
+    INCBIN "horse-up.2bpp"
+HorseUpSpritesEnd:
+
+; ================================
 ; MAIN PROGRAM
 ; ================================
 
@@ -390,25 +412,3 @@ WaitVBlank:
     cp 144
     jr c, WaitVBlank
     ret
-
-; ================================
-; HORSE SPRITE DATA
-; ================================
-
-SECTION "Horse Sprite Data", ROM0
-
-HorseDownSprites:
-    INCBIN "horse-down.2bpp"
-HorseDownSpritesEnd:
-
-HorseLeftSprites:
-    INCBIN "horse-left.2bpp"
-HorseLeftSpritesEnd:
-
-HorseRightSprites:
-    INCBIN "horse-right.2bpp"
-HorseRightSpritesEnd:
-
-HorseUpSprites:
-    INCBIN "horse-up.2bpp"
-HorseUpSpritesEnd:
