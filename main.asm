@@ -205,3 +205,29 @@ LoadHorseData:
     ld de, $8000        ; Load tiles starting at VRAM tile 0
     call CopyMemory     ; Copy horse tiles to VRAM
     ret
+
+; Display horse as 6x6 grid of tiles on screen
+DisplayHorse:
+    ld b, 6             ; 6 rows to draw
+    ld c, 0             ; Start with tile 0
+    ld hl, $9800 + 5*32 + 5  ; Screen position (5,5)
+    
+DisplayRow:
+    push bc             ; Save row counter
+    push hl             ; Save current tilemap position
+    ld b, 6             ; 6 tiles per row
+    
+DisplayTile:
+    ld a, c             ; Get current tile number
+    ld [hl+], a         ; Place tile in tilemap, advance to next position
+    inc c               ; Move to next tile number
+    dec b               ; Decrement tile counter
+    jr nz, DisplayTile  ; Continue if more tiles in this row
+    
+    pop hl              ; Restore tilemap position
+    pop bc              ; Restore row counter
+    ld de, 32           ; Move to next row (32 tiles per tilemap row)
+    add hl, de          ; Advance to next row
+    dec b               ; Decrement row counter
+    jr nz, DisplayRow   ; Continue if more rows to draw
+    ret
