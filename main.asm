@@ -107,6 +107,14 @@ ClearOAM:
     ld a, 72 ; Let's start Y at 72
     ld [HorsePosY], a
 
+    ; --- Turn on the APU (Sound Hardware) ---
+    ld a, $80       ; Bit 7: 1=On, 0=Off
+    ld [$FF26], a   ; NR52 - Master sound switch
+    ld a, $77       ; Set volume for both speakers to max
+    ld [$FF24], a   ; NR50 - Channel control / Volume
+    ld a, $FF       ; Enable all sound channels on both speakers
+    ld [$FF25], a   ; NR51 - Selection of Sound output terminal
+
     ; Load ALL horse sprites into different VRAM areas
     ld hl, HorseDownSprites
     ld de, $8000
@@ -305,6 +313,36 @@ HandleDown:
 UpdateGraphics:
     call UpdateBaseTileNumber
     call SetupHorseSprites
+    ret
+
+; ================================
+; SOUND FUNCTIONS
+; ================================
+
+PlayNeighSound:
+    ; Uses Channel 1 (Pulse wave with a frequency sweep) for a high, falling pitch.
+    ld a, %01001100 ; Sweep: time=4, direction=decrease, shift=4
+    ld [$FF10], a   ; NR10 - Sweep register
+    ld a, %10000000 ; Wave Duty: 50%, Sound Length: short
+    ld [$FF11], a   ; NR11 - Sound length/Wave pattern duty
+    ld a, %11110011 ; Volume Envelope: Start Vol=15, dir=decrease, step time=3
+    ld [$FF12], a   ; NR12 - Volume Envelope
+    ld a, $7F       ; Frequency LSB (lower 8 bits)
+    ld [$FF13], a   ; NR13 - Frequency lo
+    ld a, %11000110 ; Trigger (bit 7), Use Length (bit 6), Freq MSB (upper 3 bits)
+    ld [$FF14], a   ; NR14 - Frequency hi
+    ret
+
+PlaySnortSound:
+    ; Uses Channel 4 (Noise generator) for a short burst of static.
+    ld a, %00011111 ; Sound Length: short
+    ld [$FF20], a   ; NR41 - Sound length
+    ld a, %11100010 ; Volume Envelope: Start Vol=14, dir=decrease, step time=2
+    ld [$FF21], a   ; NR42 - Volume Envelope
+    ld a, %00110001 ; Noise Type: Clock shift=3, width=7-bit, divisor=1
+    ld [$FF22], a   ; NR43 - Polynomial Counter
+    ld a, %11000000 ; Trigger (bit 7), Use Length (bit 6)
+    ld [$FF23], a   ; NR44 - Counter/consecutive; Initial
     ret
 
 ; ================================
