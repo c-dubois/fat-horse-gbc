@@ -59,54 +59,26 @@ db $00                    ; $014D: will be fixed by linker
 dw $0000                  ; $014E-$014F: will be fixed by linker
 
 ; ================================
-; TILE DATA - Our graphics!
+; HORSE TILE DATA - From converted sprites
 ; ================================
 
-SECTION "Tile Data", ROM0
+SECTION "Horse Data", ROM0
 
-; Tile 0: Blank Tile (all color 0 - transparent/background)
-BlankTile:
-    db $00, $00    ; Row 0: all pixels = color 0 (low bits, high bits)
-    db $00, $00    ; Row 1: all pixels = color 0
-    db $00, $00    ; Row 2: all pixels = color 0
-    db $00, $00    ; Row 3: all pixels = color 0
-    db $00, $00    ; Row 4: all pixels = color 0
-    db $00, $00    ; Row 5: all pixels = color 0
-    db $00, $00    ; Row 6: all pixels = color 0
-    db $00, $00    ; Row 7: all pixels = color 0
+HorseDownTiles:
+    INCBIN "horse-down.2bpp"
+HorseDownTilesEnd:
 
-; Tile 1: Fat Horse Head - Right-facing profile
-HorseHead:
-    db $00, $00    ; Row 0: ░░░░░░░░ (empty)
-    db $10, $10    ; Row 1: ░░░█░░░░ (ear tip)
-    db $30, $30    ; Row 2: ░░██░░░░ (ear base)
-    db $78, $78    ; Row 3: ░████░░░ (top of head)
-    db $E6, $E6    ; Row 4: ███░██░░ (forehead + eye)
-    db $FE, $FE    ; Row 5: ███████░ (long face)
-    db $7F, $7F    ; Row 6: ░███████ (muzzle)
-    db $07, $07    ; Row 7: ░░░░░███ (chin)
+HorseLeftTiles:
+    INCBIN "horse-left.2bpp" 
+HorseLeftTilesEnd:
 
-; Tile 2: Fat Horse Body - Maximum chonk
-HorseBody:
-    db $00, $00    ; Row 0: ░░░░░░░░ (empty)
-    db $00, $00    ; Row 1: ░░░░░░░░ (empty)
-    db $00, $00    ; Row 2: ░░░░░░░░ (empty)
-    db $7E, $7E    ; Row 3: ░██████░ (body starts)
-    db $FF, $FF    ; Row 4: ████████ (maximum width)
-    db $FF, $FF    ; Row 5: ████████ (still chunky)
-    db $FE, $FE    ; Row 6: ███████░ (body tapers)
-    db $7E, $7E    ; Row 7: ░██████░ (where legs connect)
+HorseRightTiles:
+    INCBIN "horse-right.2bpp"
+HorseRightTilesEnd:
 
-; Tile 3: Stubby Legs
-HorseLegs:
-    db $66, $66    ; Row 0: ░██░░██░ (leg tops)
-    db $66, $66    ; Row 1: ░██░░██░ (legs continue)
-    db $00, $00    ; Row 2: ░░░░░░░░ (empty)
-    db $00, $00    ; Row 3: ░░░░░░░░ (empty)
-    db $00, $00    ; Row 4: ░░░░░░░░ (empty)
-    db $00, $00    ; Row 5: ░░░░░░░░ (empty)
-    db $00, $00    ; Row 6: ░░░░░░░░ (empty)
-    db $00, $00    ; Row 7: ░░░░░░░░ (empty)
+HorseUpTiles:
+    INCBIN "horse-up.2bpp"
+HorseUpTilesEnd:
 
 ; ================================
 ; MAIN PROGRAM
