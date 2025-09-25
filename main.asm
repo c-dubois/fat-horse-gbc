@@ -66,25 +66,25 @@ SECTION "Tile Data", ROM0
 
 ; Tile 0: Blank Tile (all color 0 - transparent/background)
 BlankTile:
-    dw `00000000    ; Row 0: all pixels = color 0
-    dw `00000000    ; Row 1: all pixels = color 0  
-    dw `00000000    ; Row 2: all pixels = color 0
-    dw `00000000    ; Row 3: all pixels = color 0
-    dw `00000000    ; Row 4: all pixels = color 0
-    dw `00000000    ; Row 5: all pixels = color 0
-    dw `00000000    ; Row 6: all pixels = color 0
-    dw `00000000    ; Row 7: all pixels = color 0
+    db $00, $00    ; Row 0: all pixels = color 0 (low bits, high bits)
+    db $00, $00    ; Row 1: all pixels = color 0
+    db $00, $00    ; Row 2: all pixels = color 0
+    db $00, $00    ; Row 3: all pixels = color 0
+    db $00, $00    ; Row 4: all pixels = color 0
+    db $00, $00    ; Row 5: all pixels = color 0
+    db $00, $00    ; Row 6: all pixels = color 0
+    db $00, $00    ; Row 7: all pixels = color 0
 
 ; Tile 1: Test pattern - 2x2 black square in top-left
 TestTile:
-    dw `33000000    ; Row 0: 2 black pixels, 6 background pixels
-    dw `33000000    ; Row 1: 2 black pixels, 6 background pixels  
-    dw `00000000    ; Row 2: all background pixels
-    dw `00000000    ; Row 3: all background pixels
-    dw `00000000    ; Row 4: all background pixels
-    dw `00000000    ; Row 5: all background pixels
-    dw `00000000    ; Row 6: all background pixels
-    dw `00000000    ; Row 7: all background pixels
+    db $0F, $0F    ; Row 0: bits 11110000 = 4 black pixels, 4 background  
+    db $F0, $F0    ; Row 1: bits 11110000 = 4 black pixels, 4 background
+    db $F0, $F0    ; Row 2: bits 11110000 = 4 black pixels, 4 background
+    db $F0, $F0    ; Row 3: bits 11110000 = 4 black pixels, 4 background
+    db $00, $00    ; Row 4: all background pixels
+    db $00, $00    ; Row 5: all background pixels  
+    db $00, $00    ; Row 6: all background pixels
+    db $00, $00    ; Row 7: all background pixels
 
 ; ================================
 ; MAIN PROGRAM
@@ -105,20 +105,13 @@ Start:
 
     ; Clear the background tilemap (make screen blank)
     ld hl, $9800        ; HL points to start of background tilemap
-    ld bc, $0400        ; BC = number of bytes to clear (2KB, 32x32 tiles)
+    ld bc, $0400        ; BC = 1024 bytes (32×32 background map)
     ld a, 0             ; A = tile number 0 (blank tile)
     call FillMemory     ; Fill background with blank tiles
 
     ; Put our test tile in the top-left corner
     ld a, 1             ; Tile number 1 (our test pattern)
     ld [$9800], a       ; Store at background map position 0,0
-
-ClearLoop:
-    ld [hl+], a         ; Store A into [HL], then increment HL
-    dec bc              ; Decrement byte counter
-    ld d, b             ; Check if BC = 0
-    or c                ; by ORing B and C
-    jr nz, ClearLoop    ; If not zero, continue loop
 
     ; Turn the LCD back on with background enabled
     ld a, $91           ; $91 = LCD on, BG on, sprites off (for now)
@@ -128,3 +121,31 @@ ClearLoop:
 MainLoop:
     halt                ; Halt CPU until next interrupt (saves power)
     jr MainLoop         ; Jump back to halt again - repeat forever
+
+; ================================  
+; UTILITY FUNCTIONS
+; ================================
+; Copy BC bytes from HL to DE
+CopyMemory:
+    ld a, [hl+]         ; Load byte from [HL], increment HL
+    ld [de], a          ; Store byte to [DE]
+    inc de              ; Increment DE
+    dec bc              ; Decrement counter
+    ld a, b             ; Check if BC = 0
+    or c                
+    jr nz, CopyMemory   ; If not zero, continue
+    ret                 ; Return to caller
+
+; Fill BC bytes startin gat HL with value in A
+FillMemory:
+    push af               ; Save the fill value on the stack
+FillLoop:
+    pop af
+    push af
+    ld [hl+], a         ; Store A to [HL], increment HL
+    dec bc              ; Decrement counter
+    ld d, b             ; Check if BC = 0
+    or c
+    jr nz, FillLoop   ; If not zero, continue
+    pop af
+    ret                 ; Return to caller
