@@ -2,6 +2,16 @@
 
 A Game Boy Color homebrew project featuring a controllable fat horse with directional movement and sound effects. Built entirely in assembly language using RGBDS.
 
+<!-- markdownlint-disable MD036 -->
+![Fat Horse Game Screenshot - Front View](fat-horse-front.png)
+
+*Front view of the fat horse sprite displayed in SameBoy emulator*
+
+![Fat Horse Game Screenshot - Side View](fat-horse-side.png)
+
+*Side view of the fat horse sprite displayed in SameBoy emulator*
+<!-- markdownlint-disable MD036 -->
+
 ## Features
 
 - **Directional Horse Sprite**: A fat horse with stubby legs that faces four different directions
