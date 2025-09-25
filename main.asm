@@ -80,6 +80,10 @@ HorseUpTiles:
     INCBIN "horse-up.2bpp"
 HorseUpTilesEnd:
 
+SECTION "Variables", WRAM0
+CurrentDirection:
+    ds 1    ; 1 byte to store current direction (0=down, 1=left, 2=right, 3=up)
+
 ; ================================
 ; MAIN PROGRAM
 ; ================================
@@ -109,40 +113,33 @@ Start:
     ld a, 0             ; Fill with zeros
     call FillMemory     ; Clear Nintendo logo tilemap
 
-    ; Set up background palette (colors 0-3)
-    ld a, %11100100     ; Palette: 11=black, 10=dark gray, 01=light gray, 00=white
+    ; Set up background palette (brown horse colors)
+    ld a, %11100100     ; Palette: 11=dark brown, 10=med brown, 01=light brown, 00=white
     ld [$FF47], a       ; Store to Background Palette register
 
-    ; Copy our tile data into VRAM (Video Ram)
-    ld hl, BlankTile    ; Source: our tile data
-    ld de, $8000        ; Destination: VRAM tile data area  
-    ld bc, 64           ; Copy 64 bytes (4 tiles × 16 bytes each)
-    call CopyMemory     ; Copy tiles to VRAM
+    ; Initialize with horse facing down
+    ld a, 0             ; Direction 0 = down
+    ld [CurrentDirection], a
+    call LoadCurrentHorse
 
-    ; Place our fat horse tiles in the layout:
-    ; [BODY] [HEAD]  <- Row 0
-    ; [LEG]  [empty] <- Row 1
+    ; Clear background tilemap
+    ld hl, $9800        ; Start of background tilemap
+    ld bc, $0400        ; Clear entire 32x32 tilemap  
+    ld a, 0             ; Fill with tile 0 (blank)
+    call FillMemory
 
-    ; Place BODY tile at position (0,0)
-    ld a, 2             ; Tile number 2 (HorseBody)
-    ld [$9800], a       ; Store at tilemap position (0,0)
-    
-    ; Place HEAD tile at position (1,0) - one tile to the right
-    ld a, 1             ; Tile number 1 (HorseHead)  
-    ld [$9801], a       ; Store at tilemap position (1,0)
-    
-    ; Place LEG tile at position (0,1) - one row down from BODY
-    ld a, 3             ; Tile number 3 (HorseLegs)
-    ld [$9820], a       ; Store at tilemap position (0,1) - $9800 + 32 bytes = $9820
+    ; Display the horse (6x6 tiles starting at screen position 5,5)
+    call DisplayHorse
 
     ; Turn the LCD back on with background enabled
     ld a, $91           ; $91 = LCD on, BG on, sprites off (for now)
     ld [$FF40], a       ; Store to LCD Control register (turns on screen)
 
-    ; Infinite loop - our "game" shows the test pattern
+    ; Main game loop with input checking
 MainLoop:
+    call CheckInput     ; Check for D-pad input
     halt                ; Halt CPU until next interrupt (saves power)
-    jr MainLoop         ; Jump back to halt again - repeat forever
+    jr MainLoop         ; Repeat forever
 
 ; ================================  
 ; UTILITY FUNCTIONS

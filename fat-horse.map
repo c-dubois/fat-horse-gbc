@@ -1,22 +1,48 @@
 SUMMARY:
-	ROM0: 192 bytes used / 16192 free
+	ROM0: 2555 bytes used / 13829 free
+	WRAM0: 1 byte used / 4095 free
 
 ROM0 bank #0:
 	SECTION: $0000-$0003 ($0004 bytes) ["ROM Bank $00"]
 	         $0000 = EntryPoint
-	SECTION: $0004-$0043 ($0040 bytes) ["Tile Data"]
-	         $0004 = BlankTile
-	         $0014 = HorseHead
-	         $0024 = HorseBody
-	         $0034 = HorseLegs
-	EMPTY: $0044-$00ff ($00bc bytes)
+	EMPTY: $0004-$00ff ($00fc bytes)
 	SECTION: $0100-$0119 ($001a bytes) ["ROM Header"]
 	EMPTY: $011a-$014f ($0036 bytes)
-	SECTION: $0150-$01b1 ($0062 bytes) ["Main"]
+	SECTION: $0150-$022c ($00dd bytes) ["Main"]
 	         $0150 = Start
-	         $019b = MainLoop
-	         $019e = CopyMemory
-	         $01a7 = FillMemory
-	         $01a8 = FillLoop
-	EMPTY: $01b2-$3fff ($3e4e bytes)
-	TOTAL EMPTY: $3f40 bytes
+	         $0190 = MainLoop
+	         $0196 = CopyMemory
+	         $019f = FillMemory
+	         $01a0 = FillLoop
+	         $01aa = LoadCurrentHorse
+	         $01b9 = LoadHorseUp
+	         $01c1 = LoadHorseDown
+	         $01c9 = LoadHorseLeft
+	         $01d1 = LoadHorseRight
+	         $01d7 = LoadHorseData
+	         $01de = DisplayHorse
+	         $01e5 = DisplayRow
+	         $01e9 = DisplayTile
+	         $01f9 = CheckInput
+	         $0215 = SwitchRight
+	         $0219 = SwitchLeft
+	         $021d = SwitchUp
+	         $0221 = SwitchDown
+	         $0223 = SwitchDirection
+	SECTION: $022d-$0b2c ($0900 bytes) ["Horse Data"]
+	         $022d = HorseDownTiles
+	         $046d = HorseLeftTiles
+	         $046d = HorseDownTilesEnd
+	         $06ad = HorseRightTiles
+	         $06ad = HorseLeftTilesEnd
+	         $08ed = HorseUpTiles
+	         $08ed = HorseRightTilesEnd
+	         $0b2d = HorseUpTilesEnd
+	EMPTY: $0b2d-$3fff ($34d3 bytes)
+	TOTAL EMPTY: $3605 bytes
+
+WRAM0 bank #0:
+	SECTION: $c000-$c000 ($0001 byte) ["Variables"]
+	         $c000 = CurrentDirection
+	EMPTY: $c001-$cfff ($0fff bytes)
+	TOTAL EMPTY: $0fff bytes
