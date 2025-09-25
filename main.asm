@@ -169,6 +169,11 @@ FillLoop:
     pop af
     ret                 ; Return to caller
 
+
+; ================================
+; HORSE MANAGEMENT FUNCTIONS
+; ================================
+
 ; Load current horse tiles into VRAM based on CurrentDirection
 LoadCurrentHorse:
     ld a, [CurrentDirection]
@@ -230,4 +235,66 @@ DisplayTile:
     add hl, de          ; Advance to next row
     dec b               ; Decrement row counter
     jr nz, DisplayRow   ; Continue if more rows to draw
+    ret
+
+; ================================
+; INPUT HANDLING
+; ================================
+
+; Check D-pad input and switch horses when direction changes
+CheckInput:
+    ; Read current joypad state
+    ld a, $20           ; Select D-pad buttons
+    ld [$FF00], a       ; Write to joypad register
+    ld a, [$FF00]       ; Read joypad state
+    ld a, [$FF00]       ; Read twice (hardware requirement)
+    ld a, [$FF00]       ; Read third time for stability
+    cpl                 ; Complement (pressed buttons now = 1)
+    and $0F             ; Mask to get only D-pad bits
+    
+    ; Check if input changed (debouncing)
+    ld b, a             ; Store current input
+    ld a, [PreviousJoypad]
+    cp b                ; Compare with previous input
+    jr z, CheckInputDone ; If same, skip processing
+    
+    ld a, b             ; Restore current input
+    ld [PreviousJoypad], a ; Save for next frame
+    
+    ; Check each direction (priority order: up, down, left, right)
+    bit 2, a            ; Up pressed? (bit 2)
+    jr nz, SwitchUp
+    bit 3, a            ; Down pressed? (bit 3)
+    jr nz, SwitchDown
+    bit 1, a            ; Left pressed? (bit 1)
+    jr nz, SwitchLeft
+    bit 0, a            ; Right pressed? (bit 0)
+    jr nz, SwitchRight
+    
+CheckInputDone:
+    ret
+    
+SwitchUp:
+    ld a, 3             ; Direction 3 = up
+    jr SwitchDirection
+SwitchDown:
+    ld a, 0             ; Direction 0 = down
+    jr SwitchDirection
+SwitchLeft:
+    ld a, 1             ; Direction 1 = left  
+    jr SwitchDirection
+SwitchRight:
+    ld a, 2             ; Direction 2 = right
+    
+SwitchDirection:
+    ; Check if direction actually changed
+    ld b, a             ; Store new direction
+    ld a, [CurrentDirection]
+    cp b                ; Compare with current direction
+    ret z               ; If same, don't update
+    
+    ld a, b             ; Restore new direction
+    ld [CurrentDirection], a ; Update current direction
+    call LoadCurrentHorse    ; Load new horse tiles
+    call DisplayHorse        ; Redraw horse on screen
     ret
