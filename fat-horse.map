@@ -1,5 +1,5 @@
 SUMMARY:
-	ROM0: 2647 bytes used / 13737 free
+	ROM0: 2742 bytes used / 13642 free
 	WRAM0: 5 bytes used / 4091 free
 
 ROM0 bank #0:
@@ -8,45 +8,47 @@ ROM0 bank #0:
 	EMPTY: $0004-$00ff ($00fc bytes)
 	SECTION: $0100-$0119 ($001a bytes) ["ROM Header"]
 	EMPTY: $011a-$014f ($0036 bytes)
-	SECTION: $0150-$0288 ($0139 bytes) ["Main"]
+	SECTION: $0150-$02e7 ($0198 bytes) ["Main"]
 	         $0150 = Start
 	         $015f = ClearOAM
-	         $01b4 = MainLoop
-	         $01bc = UpdateBaseTileNumber
-	         $01cb = UpdateBaseTileNumber.SetUp
-	         $01cf = UpdateBaseTileNumber.SetDown
-	         $01d3 = UpdateBaseTileNumber.SetLeft
-	         $01d7 = UpdateBaseTileNumber.SetRight
-	         $01d9 = UpdateBaseTileNumber.Done
-	         $01dd = SetupHorseSprites
-	         $01ea = SetupHorseSprites.row_loop
-	         $01f2 = SetupHorseSprites.col_loop
-	         $020d = CheckInput
-	         $022f = HandleRight
-	         $0240 = HandleLeft
-	         $0251 = HandleUp
-	         $0262 = HandleDown
-	         $0271 = UpdateGraphics
-	         $0278 = CopyMemory
-	         $0281 = WaitVBlank
-	SECTION: $0289-$0b88 ($0900 bytes) ["Horse Sprite Data"]
-	         $0289 = HorseDownSprites
-	         $04c9 = HorseDownSpritesEnd
-	         $04c9 = HorseLeftSprites
-	         $0709 = HorseLeftSpritesEnd
-	         $0709 = HorseRightSprites
-	         $0949 = HorseRightSpritesEnd
-	         $0949 = HorseUpSprites
-	         $0b89 = HorseUpSpritesEnd
-	EMPTY: $0b89-$3fff ($3477 bytes)
-	TOTAL EMPTY: $35a9 bytes
+	         $01c3 = MainLoop
+	         $01cb = UpdateBaseTileNumber
+	         $01da = UpdateBaseTileNumber.SetUp
+	         $01de = UpdateBaseTileNumber.SetDown
+	         $01e2 = UpdateBaseTileNumber.SetLeft
+	         $01e6 = UpdateBaseTileNumber.SetRight
+	         $01e8 = UpdateBaseTileNumber.Done
+	         $01ec = SetupHorseSprites
+	         $01f9 = SetupHorseSprites.row_loop
+	         $0201 = SetupHorseSprites.col_loop
+	         $021c = CheckInput
+	         $025f = HandleRight
+	         $0270 = HandleLeft
+	         $0281 = HandleUp
+	         $0292 = HandleDown
+	         $02a1 = UpdateGraphics
+	         $02a8 = PlayNeighSound
+	         $02c2 = PlaySnortSound
+	         $02d7 = CopyMemory
+	         $02e0 = WaitVBlank
+	SECTION: $02e8-$0be7 ($0900 bytes) ["Horse Sprite Data"]
+	         $02e8 = HorseDownSprites
+	         $0528 = HorseDownSpritesEnd
+	         $0528 = HorseLeftSprites
+	         $0768 = HorseLeftSpritesEnd
+	         $0768 = HorseRightSprites
+	         $09a8 = HorseRightSpritesEnd
+	         $09a8 = HorseUpSprites
+	         $0be8 = HorseUpSpritesEnd
+	EMPTY: $0be8-$3fff ($3418 bytes)
+	TOTAL EMPTY: $354a bytes
 
 WRAM0 bank #0:
 	SECTION: $c000-$c004 ($0005 bytes) ["Variables"]
 	         $c000 = CurrentDirection
 	         $c001 = HorsePosX
 	         $c002 = HorsePosY
-	         $c003 = PreviousJoypad
+	         $c003 = PreviousActionButtonState
 	         $c004 = BaseTileNumber
 	EMPTY: $c005-$cfff ($0ffb bytes)
 	TOTAL EMPTY: $0ffb bytes

@@ -71,8 +71,8 @@ HorsePosX:
 HorsePosY:
     ds 1    ; The Y coordinate of the horse
 
-PreviousJoypad:
-    ds 1    ; Input debouncing
+PreviousActionButtonState:
+    ds 1    ; Debouncing for A/B buttons
 
 BaseTileNumber:
     ds 1    ; Starting tile number for current horse
@@ -240,16 +240,16 @@ SetupHorseSprites:
 ; ================================
 
 CheckInput:
-    ; Read joypad state for D-pad
-    ld a, $20
+    ; --- Part 1: Handle D-Pad Movement ---
+    ld a, $20       ; Select the D-Pad for reading
     ld [$FF00], a
     ld a, [$FF00]
     ld a, [$FF00]
-    ld a, [$FF00]
-    cpl             ; Invert bits (pressed buttons are now 1)
-    and $0F         ; Isolate D-pad bits
+    cpl
+    and $0F
 
-    ; Check one direction at a time
+    ; Check one direction at a time. If a direction is pressed, the handler
+    ; will be called and this function will exit for this frame.
     bit 0, a
     jr nz, HandleRight
     bit 1, a
@@ -259,7 +259,33 @@ CheckInput:
     bit 3, a
     jr nz, HandleDown
 
-    ; No direction was pressed, so we're done
+    ; --- Part 2: Handle A/B Buttons (if not moving) ---
+    ld a, $10       ; Select the Action Buttons for reading
+    ld [$FF00], a
+    ld a, [$FF00]
+    ld a, [$FF00]
+    cpl
+    and $0F
+
+    ; Debounce: Find which buttons were just pressed THIS frame
+    ld b, a                               ; b = current button state
+    ld a, [PreviousActionButtonState]     ; a = previous state
+
+    push af                               ; Temporarily save A (previous state) on the stack
+    ld a, b                               ; Copy B (current state) into A
+    ld [PreviousActionButtonState], a     ; Now we can legally save the new state for the next frame
+    pop af                                ; Restore A (previous state) from the stack
+
+    xor b                                 ; a (previous) XOR b (current) = changed buttons
+    and b                                 ; result AND b (current) = newly pressed buttons
+
+    ; Check for newly pressed A or B buttons
+    bit 0, a ; Was A (bit 0) just pressed?
+    call nz, PlayNeighSound
+
+    bit 1, a ; Was B (bit 1) just pressed?
+    call nz, PlaySnortSound
+
     ret
 
 HandleRight:
