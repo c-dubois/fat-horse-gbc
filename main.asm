@@ -168,3 +168,40 @@ FillLoop:
     jr nz, FillLoop   ; If not zero, continue
     pop af
     ret                 ; Return to caller
+
+; Load current horse tiles into VRAM based on CurrentDirection
+LoadCurrentHorse:
+    ld a, [CurrentDirection]
+    
+    ; Jump to appropriate horse data based on direction
+    cp 0
+    jr z, LoadHorseDown
+    cp 1  
+    jr z, LoadHorseLeft
+    cp 2
+    jr z, LoadHorseRight
+    ; Otherwise load up (direction 3)
+    
+LoadHorseUp:
+    ld hl, HorseUpTiles
+    ld bc, HorseUpTilesEnd - HorseUpTiles
+    jr LoadHorseData
+    
+LoadHorseDown:
+    ld hl, HorseDownTiles
+    ld bc, HorseDownTilesEnd - HorseDownTiles
+    jr LoadHorseData
+    
+LoadHorseLeft:
+    ld hl, HorseLeftTiles
+    ld bc, HorseLeftTilesEnd - HorseLeftTiles
+    jr LoadHorseData
+    
+LoadHorseRight:
+    ld hl, HorseRightTiles  
+    ld bc, HorseRightTilesEnd - HorseRightTiles
+    
+LoadHorseData:
+    ld de, $8000        ; Load tiles starting at VRAM tile 0
+    call CopyMemory     ; Copy horse tiles to VRAM
+    ret
