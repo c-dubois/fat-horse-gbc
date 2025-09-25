@@ -84,6 +84,9 @@ SECTION "Variables", WRAM0
 CurrentDirection:
     ds 1    ; 1 byte to store current direction (0=down, 1=left, 2=right, 3=up)
 
+PreviousJoypad:
+    ds 1    ; Store previous joypad state for input debouncing
+
 ; ================================
 ; MAIN PROGRAM
 ; ================================
@@ -118,8 +121,10 @@ Start:
     ld [$FF47], a       ; Store to Background Palette register
 
     ; Initialize with horse facing down
-    ld a, 0             ; Direction 0 = down
+    ld a, 0                    ; Direction 0 = down
     ld [CurrentDirection], a
+    ld a, $FF                  ; Initialize previous joypad state
+    ld [PreviousJoypad], a
     call LoadCurrentHorse
 
     ; Clear background tilemap
@@ -140,35 +145,6 @@ MainLoop:
     call CheckInput     ; Check for D-pad input
     halt                ; Halt CPU until next interrupt (saves power)
     jr MainLoop         ; Repeat forever
-
-; ================================  
-; UTILITY FUNCTIONS
-; ================================
-; Copy BC bytes from HL to DE
-CopyMemory:
-    ld a, [hl+]         ; Load byte from [HL], increment HL
-    ld [de], a          ; Store byte to [DE]
-    inc de              ; Increment DE
-    dec bc              ; Decrement counter
-    ld a, b             ; Check if BC = 0
-    or c                
-    jr nz, CopyMemory   ; If not zero, continue
-    ret                 ; Return to caller
-
-; Fill BC bytes starting at HL with value in A
-FillMemory:
-    push af               ; Save the fill value on the stack
-FillLoop:
-    pop af
-    push af
-    ld [hl+], a         ; Store A to [HL], increment HL
-    dec bc              ; Decrement counter
-    ld a, b             ; Check if BC = 0
-    or c
-    jr nz, FillLoop   ; If not zero, continue
-    pop af
-    ret                 ; Return to caller
-
 
 ; ================================
 ; HORSE MANAGEMENT FUNCTIONS
@@ -298,3 +274,32 @@ SwitchDirection:
     call LoadCurrentHorse    ; Load new horse tiles
     call DisplayHorse        ; Redraw horse on screen
     ret
+
+; ================================  
+; UTILITY FUNCTIONS
+; ================================
+
+; Copy BC bytes from HL to DE
+CopyMemory:
+    ld a, [hl+]         ; Load byte from [HL], increment HL
+    ld [de], a          ; Store byte to [DE]
+    inc de              ; Increment DE
+    dec bc              ; Decrement counter
+    ld a, b             ; Check if BC = 0
+    or c                
+    jr nz, CopyMemory   ; If not zero, continue
+    ret                 ; Return to caller
+
+; Fill BC bytes starting at HL with value in A
+FillMemory:
+    push af               ; Save the fill value on the stack
+FillLoop:
+    pop af
+    push af
+    ld [hl+], a         ; Store A to [HL], increment HL
+    dec bc              ; Decrement counter
+    ld a, b             ; Check if BC = 0
+    or c
+    jr nz, FillLoop   ; If not zero, continue
+    pop af
+    ret                 ; Return to caller
